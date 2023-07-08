@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock</title>
+    <link rel="stylesheet" href="imgg/alarm-clock-cartoon-icon-png.webp">
+    <script src="jquery-3.6.4.min.js"></script>
+    <link rel="stylesheet" href="l1.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body>
+    <div class="conainter">
+        <center>
+            <div id="btn">
+                <input type="button" value="Start" name="" id="btn-start">
+                <input type="button" value="Stop" name="" id="btn-stop">
+                <input type="button" value="Resume" name="" id="btn-resume">
+                <input type="button" value="Reset" name="" id="btn-reset">
+            </div>
+        </center>
+        <center>
+            <select name="" id="select">
+                <option value="" disabled selected>Select Your Option...</option>
+                <option value="stopwatch">Stop Watch</option>
+                <option value="countdown">Count Down</option>
+            </select>
+        </center>
+        <center>
+            <div id="set-time">
+                <div><label>hrs</label> <br> <input type="number" class="my-input" min="0" max="60" name="" id="hrs">
+                </div>
+                <div> <label>min</label> <br> <input type="number" class="my-input" min="0" max="60" name="" id="min">
+                </div>
+                <div> <label>sec</label> <br> <input type="number" class="my-input" min="0" max="60" name="" id="sec">
+                </div>
+            </div>
+        </center>
+        <center>
+            <div id="display">
+                <h1 id="display-time">00:00:00</h1>
+            </div>
+        </center>
+    </div>
+    <i class="fa-solid fa-xmark fa-bounce" id="cancel"></i>
+    <img src="imgg/Alarm_Clock_GIF_Animation_High_Res.gif" alt="" id="alarm">
+    <audio id="myAudio" src="imgg/iPhone-Alarm-Original.mp3"></audio>
+    <script>
+        $(document).ready(() => {
+            // set length input
+            $('.my-input').on('input', function () {
+                if ($(this).val().length > 2) {
+                    $(this).val($(this).val().slice(0, 2));
+                }
+                if ($("#min").val() < 10 && ![0, 1, 2, 3, 4, 5].includes(parseInt($("#min").val()))) {
+                    $("#min").val("");
+                }
+                if ($("#sec").val() < 10 && ![0, 1, 2, 3, 4, 5].includes(parseInt($("#sec").val()))) {
+                    $("#sec").val("");
+                }
+            });
+
+
+            // global declarations
+            let [seconds, minutes, hours] = [0, 0, 0];
+            let hs, msa, mss;
+            let display_time = $("#display-time");
+            let int = null;
+            let back = null;
+            let vis = null;
+            let isRunning = false;
+            let stopwatchResumeHandler;
+            let stopwatchStopHandler;
+            let min, sec, hrs;
+            // reset timer
+            function resetTimer() {
+                clearInterval(int);
+                clearInterval(back);
+                clearInterval(vis);
+                isRunning = false;
+                $("#btn-start").removeAttr("disabled");
+                seconds = 0;
+                minutes = 0;
+                hours = 0;
+                updateDisplay(0, 0, 0);
+            }
+            // function setimer() {
+            //     var number = $("#min").val();
+            //     var nnumber = $("#sec").val();
+
+            //     if (number < 10 && ![0, 1, 2, 3, 4, 5].includes(parseInt(number))) {
+            //        $("#min").val="";
+            //     }
+            //     // if (number <= 5 && ![6, 7, 8, 9].includes(parseInt(number))) {
+
+            //     // }
+            //     // if (number >= 10) {
+            //     //     alert("Second digit is 2");
+            //     // }
+
+            // }
+            function updateDisplay(h, m, s) {
+                let hh = h < 10 ? "0" + h : h;
+                let mm = m < 10 ? "0" + m : m;
+                let ss = s < 10 ? "0" + s : s;
+                display_time.html(`${hh}:${mm}:${ss}`);
+            }
+            // combobox
+            $("#select").change(() => {
+                let changevalue = $("#select").val();
+                // stop watch
+                if (changevalue == "stopwatch") {
+                    $("#btn").show();
+                    $("#btn-stop").attr("disabled", "true");
+                    $("#btn-reset").attr("disabled", "true");
+                    resetTimer();
+                    $("#set-time").hide();
+                    // btn-start in stop watch
+                    $("#btn-start").off('click').on('click', () => {
+                        if ($("#btn-resume").is(":visible")) {
+                            $("#btn-stop").attr("disabled", "true");
+                            $("#btn-reset").attr("disabled", "true");
+                            $("#btn-stop").show();
+                            $("#btn-resume").hide();
+                            $("#btn-start").attr("disabled", "true");
+                        }
+                        $("#btn-reset").removeAttr("disabled");
+                        $("#btn-stop").removeAttr("disabled");
+                        $("#btn-start").attr("disabled", "true");
+                        int = setInterval(startfun, 1000);
+                        return;
+                    });
+                    // start function for stop watch
+                    function startfun() {
+                        seconds++;
+                        if (seconds == 60) {
+                            seconds = 0;
+                            minutes++;
+                            if (minutes == 60) {
+                                minutes = 0;
+                                hours++;
+                            }
+                        }
+                        updateDisplay(hours, minutes, seconds);
+                    }
+                    $("#btn-stop").off('click').on('click', () => {
+                        if (isRunning) {
+                            isRunning = false;
+                        }
+                        clearInterval(int);
+                        $("#btn-stop").hide();
+                        $("#btn-resume").show();
+                        $("#btn-start").removeAttr("disabled");
+                    });
+                    $("#btn-resume").off('click').on('click', () => {
+                        if (!isRunning) {
+                            isRunning = true;
+                            int = setInterval(startfun, 1000);
+                            $("#btn-start").attr("disabled", "true");
+                            $("#btn-stop").show();
+                            $("#btn-resume").hide();
+                        }
+                    });
+                    $("#btn-reset").click(() => {
+                        resetTimer();
+                        $("#btn-stop").show();
+                        $("#btn-resume").hide();
+                        $("#btn-stop").attr("disabled", "true");
+                        $("#btn-reset").attr("disabled", "true");
+                    });
+                    clearInterval(int);
+                }
+                else if (changevalue == "countdown") {
+                    $("#btn").show();
+                    resetTimer();
+                    var set_time = $('#set-time');
+                    set_time.on('keypress', function (e) {
+                        if (e.which > 47 && e.which < 58) return;
+                        e.preventDefault();
+                    });
+
+
+
+                    $('#hrs').attr('placeholder', '00');
+                    $('#min').attr('placeholder', '00');
+                    $('#sec').attr('placeholder', '00');
+                    $("#set-time").show();
+                    $("#btn-start").attr("disabled", "true");
+                    $("#btn-stop").attr("disabled", "true");
+                    $("#btn-reset").attr("disabled", "true");
+                    $("#set-time").on("input", function () {
+                        $("#btn-start").removeAttr("disabled");
+                    });
+                    $("#btn-resume").off('click').on('click', () => {
+                        $("#btn-start").attr("disabled", "true");
+                        vis = setInterval(res, 1000);
+                        $("#btn-stop").show();
+                        $("#btn-resume").hide();
+                    });
+                    function res() {
+                        if (mss == 0) {
+                            if (msa == 0) {
+                                if (hs == 0) {
+                                    $("#cancel").css("display", "block");
+                                    $("#alarm").css("display", "block");
+                                    var audio = document.getElementById("myAudio");
+                                    audio.play();
+                                    resetTimer();
+                                    $("#cancel").click(() => {
+                                        $("#cancel").css("display", "none");
+                                        $("#alarm").css("display", "none");
+                                        audio.pause();
+                                        audio.currentTime = 0;
+                                    });
+                                    return;
+                                } else {
+                                    hs--;
+                                    msa = 59;
+                                    mss = 59;
+                                }
+                            } else {
+                                msa--;
+                                mss = 59;
+                            }
+                        } else {
+                            mss--;
+                        }
+                        updateDisplay(hs, msa, mss);
+                    };
+                    $("#btn-start").off('click').on('click', () => {
+                        // note
+                        if ($("#hrs").val() === "") {
+                            $("#hrs").val("00");
+                        }
+                        if ($("#min").val() === "") {
+                            $("#min").val("00");
+                        }
+                        if ($("#sec").val() === "") {
+                            $("#sec").val("00");
+                        }
+                        //note
+                        if ($("#btn-stop").is(":visible")) {
+                            console.log(1);
+                            $("#btn-start").attr("disabled", "true");
+                            $("#btn-stop").removeAttr("disabled");
+                            $("#btn-reset").removeAttr("disabled");
+
+                            hs = parseInt($('#hrs').val());
+                            msa = parseInt($('#min').val());
+                            mss = parseInt($('#sec').val());
+                            back = setInterval(ahhh, 1000);
+                            isRunning = true;
+                            $("#btn-stop").show();
+                            $("#btn-resume").hide();
+                        }
+                        else if ($("#btn-resume").is(":visible")) {
+                            console.log(2);
+                            $("#btn-start").attr("disabled", "true");
+                            vis = setInterval(res, 1000);
+                            $("#btn-stop").show();
+                            $("#btn-resume").hide();
+                        }
+                    });
+                    function ahhh() {
+                        if (mss == 0) {
+                            if (msa == 0) {
+                                if (hs == 0) {
+                                    $("#cancel").css("display", "block");
+                                    $("#alarm").css("display", "block");
+                                    var audio = document.getElementById("myAudio");
+                                    audio.play();
+                                    resetTimer();
+                                    $('#hrs').val('');
+                                    $('#min').val('');
+                                    $('#sec').val('');
+                                    $("#btn-start").attr("disabled", "true");
+                                    $("#btn-stop").attr("disabled", "true");
+                                    $("#btn-reset").attr("disabled", "true");
+                                    $("#select").attr("disabled", "true");
+                                    $("#cancel").click(() => {
+                                        $('#hrs').val('');
+                                        $('#min').val('');
+                                        $('#sec').val('');
+                                        $("#btn-start").removeAttr("disabled");
+                                        $("#select").removeAttr("disabled");
+                                        $("#cancel").css("display", "none");
+                                        $("#alarm").css("display", "none");
+                                        audio.pause();
+                                        audio.currentTime = 0;
+                                        $("#btn-start").attr("disabled", "true");
+                                    });
+                                    return;
+                                } else {
+                                    hs--;
+                                    msa = 59;
+                                    mss = 59;
+                                }
+                            } else {
+                                msa--;
+                                mss = 59;
+                            }
+                        } else {
+                            mss--;
+                        }
+                        updateDisplay(hs, msa, mss);
+                    };
+                    $("#btn-reset").click(() => {
+                        $('#hrs').val('');
+                        $('#min').val('');
+                        $('#sec').val('');
+
+                        $("#btn-stop").attr("disabled", true);
+                        $("#btn-reset").attr("disabled", true);
+                        resetTimer();
+                        $("#btn-stop").show();
+                        $("#btn-resume").hide();
+                        $("#btn-start").attr("disabled", true);
+                    });
+                    $("#btn-stop").off('click').on('click', () => {
+                        clearInterval(int);
+                        if (isRunning) {
+                            isRunning = false;
+                        }
+                        $("#btn-start").removeAttr("disabled");
+                        clearInterval(back);
+                        clearInterval(vis);
+                        $("#btn-stop").hide();
+                        $("#btn-resume").show();
+                    });
+                    clearInterval(int);
+                    clearInterval(back);
+                    clearInterval(vis);
+                }
+            });
+        });
+    </script>
+</body>
